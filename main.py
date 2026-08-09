@@ -14,6 +14,7 @@ def ab():
     return {"Project":"Url shorterner",
     "Author":"Adi"
     }   
+
 @app.get("/hello/{name}")
 def greet(name):
     return {"Message":f"Heloow {name}",
@@ -47,9 +48,10 @@ class URLRequest(BaseModel):
 
 url_database = {}
 
-@app.post("/shorten")
+@app.post("/shorten", status_code=status.HTTP_201_CREATED)
 def shorten(request: URLRequest):
     short_code = generate_short_code()
+
     url_database[short_code] = request.url
 
     print(url_database)
