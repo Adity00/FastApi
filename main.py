@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 import random
 import string
 from fastapi.responses import RedirectResponse
@@ -54,17 +54,16 @@ def calculate(a: int, b: int):
 
 
 class URLRequest(BaseModel):
-    url: str
+    url: HttpUrl
 
 
 url_database = {}
-
 
 @app.post("/shorten", status_code=status.HTTP_201_CREATED)
 def shorten(request: URLRequest):
     short_code = generate_short_code()
 
-    url_database[short_code] = request.url
+    url_database[short_code] = {"url":request.url,"clicks":0,"expires_at":None}
 
     print(url_database)
 
@@ -73,13 +72,27 @@ def shorten(request: URLRequest):
         "shortcode": short_code
     }
 
+@app.get("/stats/{code}")
+def stats(code:str):
+    if url_database[code]:
+        return{
+            "shortcode":code,
+            "original_url":url_database[code]["url"],
+            "click":url_database[code]["clicks"]
+        }
+    raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Short code not found"
+        )
 
-@app.get("/code/{code}")
+@app.get("/{code}")
 def redirect(code: str):
     if code in url_database:
+        url_database[code]["clicks"] += 1
+        print[url_database[code]]
         return RedirectResponse(
-            url=url_database[code],
-            status_code=302
+            url=url_database[code]["url"],
+            status_code=302,
         )
 
     raise HTTPException(
