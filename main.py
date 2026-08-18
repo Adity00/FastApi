@@ -3,6 +3,7 @@ from pydantic import BaseModel, HttpUrl
 import random
 import string
 from fastapi.responses import RedirectResponse
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -55,6 +56,7 @@ def calculate(a: int, b: int):
 
 class URLRequest(BaseModel):
     url: HttpUrl
+    expires_in:int|None = None
 
 
 url_database = {}
@@ -63,13 +65,19 @@ url_database = {}
 def shorten(request: URLRequest):
     short_code = generate_short_code()
 
-    url_database[short_code] = {"url":request.url,"clicks":0,"expires_at":None}
+    expires_at = None
+
+    if request.expires_in is not None:
+        expires_at = datetime.now() + timedelta(seconds=request.expires_in)
+
+    url_database[short_code] = {"url":request.url,"clicks":0 ,"expires_at":expires_at}
 
     print(url_database)
 
     return {
         "originalUrl": request.url,
-        "shortcode": short_code
+        "shortcode": short_code,
+        "expires_at": expires_at
     }
 
 @app.get("/stats/{code}")
@@ -87,17 +95,27 @@ def stats(code:str):
 
 @app.get("/{code}")
 def redirect(code: str):
-    if code in url_database:
-        url_database[code]["clicks"] += 1
-        print[url_database[code]]
-        return RedirectResponse(
-            url=url_database[code]["url"],
-            status_code=302,
+
+    if code not in url_database:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Short code not found"
         )
 
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Short code not found"
+    url_data = url_database[code]
+
+    if url_data["expires_at"] is not None:
+        if datetime.now() > url_data["expires_at"]:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Short URL has expired"
+            )
+
+    url_data["clicks"] += 1
+
+    return RedirectResponse(
+        url=url_data["url"],
+        status_code=302
     )
 
 
