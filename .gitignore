@@ -117,3 +117,19 @@ python/
 
 # PyCharm settings
 .idea/
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# Environment variables / secrets
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

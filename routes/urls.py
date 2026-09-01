@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from models.url import URLRequest,URLRecord
 from database.memory import url_database
-from services.url_service import generate_short_code,create_short_url
+from services.url_service import generate_short_code,create_short_url,get_url_for_redirect
 
 
 router = APIRouter()
@@ -45,28 +45,12 @@ def stats(code: str):
 @router.get("/{code}")
 def redirect_url(code: str):
 
-    if code not in url_database:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Short code not found"
-        )
-
-    record = url_database[code]
-
-    if record.expires_at is not None:
-        if datetime.now() > record.expires_at:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="URL expired"
-            )
-
-    record.clicks += 1
+    url = get_url_for_redirect(code)
 
     return RedirectResponse(
-        url=record.url,
+        url=url,
         status_code=302
     )
-
 
 
 

@@ -1,6 +1,7 @@
 import random
 import string
 from datetime import datetime,timedelta
+from fastapi import HTTPException,status
 
 from database.memory import url_database
 from models.url import URLRecord
@@ -28,3 +29,20 @@ def create_short_url(url, expire_in=None):
         expires_at= expires_at
     )
     return short_code
+
+def get_url_for_redirect(code):
+    if code not in url_database:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="short code Not FOund"
+        )
+    record = url_database[code]
+
+    if record.expires_at is not None:
+        if datetime.now() > record.expires_at:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Expired Link"
+            )
+    record.clicks+=1
+    return record.url    
