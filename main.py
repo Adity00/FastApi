@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 
 from routes.urls import router
-from database.connection import connection
-from database.queries import create_url
 
 app = FastAPI()
 
@@ -13,15 +11,10 @@ def home():
     }
 
 @app.get("/about")
-def ab():
+def about():
     return{
         "Project":"URL shortener",
         "Author":"Adi"
     }
 
 app.include_router(router)
-
-create_url(
-    "test01",
-    "https://google.com"
-)
