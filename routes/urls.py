@@ -1,84 +1,65 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import RedirectResponse
-from datetime import datetime, timedelta
 
-from models.url import URLRequest,URLRecord
-from database.memory import url_database
-from services.url_service import generate_short_code,create_short_url,get_url_for_redirect
+from models.url import URLRequest,URLResponse,URLStatsResponse
+from services.url_service import create_short_url, get_url_for_redirect
+from database.queries import get_url_stats
 
 
 router = APIRouter()
 
 
-@router.post("/shorten", status_code=status.HTTP_201_CREATED)
+@router.post("/shorten",response_model=URLResponse, status_code=status.HTTP_201_CREATED)
 def shorten(request: URLRequest):
 
-    short_code = create_short_url(
+    short_code, expires_at = create_short_url(
         request.url,
         request.expires_in
     )
 
     return {
         "original_url": request.url,
-        "shortcode": short_code
+        "shortcode": short_code,
+        "expires_at":expires_at
     }
 
 
-@router.get("/stats/{code}")
+@router.get("/stats/{code}", response_model=URLStatsResponse)
 def stats(code: str):
 
-    if code in url_database:
-        record = url_database[code]
-        return {
-            "shortcode": code,
-            "original_url": record.url,
-            "clicks": record.clicks,
-            "expires_at": record.expires_at
-        }
+    record = get_url_stats(code)
 
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Short code not found"
-    )
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Short code not found"
+        )
+
+    return {
+        "shortcode": code,
+        "original_url": record["url"],
+        "clicks": record["clicks"],
+        "expires_at": record["expires_at"]
+    }
 
 
 @router.get("/{code}")
 def redirect_url(code: str):
 
-    url = get_url_for_redirect(code)
+    result, url = get_url_for_redirect(code)
+
+    if result == 'Not_Found':
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Short code not found or URL expired"
+        )
+    if result == 'Expired':
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="URL_Expired"
+        )
 
     return RedirectResponse(
         url=url,
         status_code=302
     )
-
-
-
-
-
-
-
-
-# @router.post("/shorten", status_code=status.HTTP_201_CREATED)
-# def shorten(request: URLRequest):
-
-#     short_code = generate_short_code()
-
-#     expires_at = None
-
-#     if request.expires_in is not None:
-#         expires_at = datetime.now() + timedelta(
-#             seconds=request.expires_in
-#         )
-
-#     url_database[short_code] = URLRecord(
-#         url = request.url,
-#         clicks=0,
-#         expires_at=expires_at
-#     )
-
-#     return {
-#         "original_url": request.url,
-#         "shortcode": short_code,
-#         "expires_at": expires_at
-#     }
