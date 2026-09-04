@@ -5,17 +5,12 @@ from datetime import datetime,timedelta
 from database.queries import create_url, get_url_for_redirect_db,increment_clicks
 
 def generate_short_code(length=6):
-    char = string.digits+string.ascii_letters
-
-    while True:
-        res=''
-        for i in range(length):
-            res+=random.choice(char)
-        
-        return res    
+    characters = string.digits + string.ascii_letters
+    return ''.join(random.choice(characters) for _ in range(length))    
 
 def create_short_url(url, expire_in=None):
     short_code = generate_short_code()
+
     expires_at=None
 
     if expire_in is not None:
@@ -26,18 +21,18 @@ def create_short_url(url, expire_in=None):
         url=str(url),
         expires_at=expires_at
     )
-    return short_code
+    return short_code,expires_at
 
 def get_url_for_redirect(code):
     record = get_url_for_redirect_db(code)
 
     if record is None:
-        return None
+        return "Not_Found",None
 
     if record["expires_at"] is not None:
         if datetime.now() > record["expires_at"]:
-            return None 
+            return "Expired",None 
 
     increment_clicks(code)
 
-    return record["url"]
+    return "Success", record["url"]
