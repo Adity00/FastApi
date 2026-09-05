@@ -113,7 +113,7 @@ def test_expired_url():
     assert response.json()['detail'] == 'URL_Expired'
 
 
-def test_nonexsitent_short_code():
+def test_nonexistent_short_code():
 
     response = client.get(
         '/doesnotexist',
@@ -122,3 +122,34 @@ def test_nonexsitent_short_code():
 
     assert response.status_code == 404
     assert response.json()['detail'] == 'Short code not found'
+
+def test_invalid_url():
+    reponse = client.post(
+        '/shorten',
+        json={
+            'url':'not-a-valid-url',
+            'expires_in':300
+        }
+    )
+    assert reponse.status_code == 422
+
+def test_missing_url():
+    response = client.post(
+        '/shorten',
+        json={
+            'expires_in':300
+        }
+    )    
+
+    assert response.status_code == 422
+
+def test_invalid_expires_in():
+    response = client.post(
+        '/shorten',
+        json={
+            'url':'https://example.com',
+            'expires_in':'invalid expires_in input'
+        }
+    )    
+
+    assert response.status_code == 422
