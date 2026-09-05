@@ -1,13 +1,18 @@
 import os
-import psycopg
+from psycopg_pool import ConnectionPool
 from dotenv import load_dotenv
 
 load_dotenv()
 
-connection = psycopg.connect(
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT"),
-    dbname=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD")
+pool = ConnectionPool(
+    conninfo = (
+        f'host={os.getenv("DB_HOST")} ' 
+        f'port={os.getenv('DB_PORT')} '
+        f'dbname={os.getenv("DB_NAME")} '
+        f'user={os.getenv("DB_USER")} '
+        f'password={os.getenv("DB_PASSWORD")} '
+    ),
+    min_size=1,
+    max_size=5,
+    open = True
 )
