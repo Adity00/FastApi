@@ -51,7 +51,7 @@ def redirect_url(code: str):
     if result == 'Not_Found':
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Short code not found or URL expired"
+            detail="Short code not found"
         )
     if result == 'Expired':
         raise HTTPException(
