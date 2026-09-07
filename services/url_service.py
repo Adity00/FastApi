@@ -28,12 +28,4 @@ def create_short_url(url, expire_in=None):
             return short_code, expires_at
 
 def get_url_for_redirect(code):
-    record = get_url_and_increment_clicks(code)
-
-    if not record['found']:
-        return "Not_Found", None
-
-    if not record['active']:
-        return 'Expired', None
-    
-    return "Success", record["url"]
+    return get_url_and_increment_clicks(code)

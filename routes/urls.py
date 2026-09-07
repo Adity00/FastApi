@@ -46,20 +46,20 @@ def stats(code: str):
 @router.get("/{code}")
 def redirect_url(code: str):
 
-    result, url = get_url_for_redirect(code)
+    result = get_url_for_redirect(code)
 
-    if result == 'Not_Found':
+    if result['status'] == 'not_found':
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Short code not found"
         )
-    if result == 'Expired':
+    if result['status'] == 'expired':
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="URL_Expired"
         )
 
     return RedirectResponse(
-        url=url,
+        url=result['url'],
         status_code=302
     )

@@ -16,6 +16,7 @@ def create_url(short_code, url, expires_at=None):
         return True
 
     except UniqueViolation:
+        print("Collison:",short_code)
         return False
 
 def get_url_stats(shortcode):
@@ -61,10 +62,9 @@ def get_url_and_increment_clicks(shortcode):
 
             if row is not None:
                 return {
+                    'status':'success',
                     "url":row[0],
-                    'expires_at':row[1],
-                    'found':True,
-                    'active':True
+                    'expires_at':row[1]
                 }
 
             cursor.execute(
@@ -80,11 +80,10 @@ def get_url_and_increment_clicks(shortcode):
 
             if row is None:
                 return{
-                    "found":False
+                    'status':'not_found'
                 }
 
             return{
-                "found":True,
-                "active":False
+                'status':'expired'
             }
         
