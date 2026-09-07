@@ -1,8 +1,8 @@
-from pydantic import BaseModel,HttpUrl
+from pydantic import BaseModel, HttpUrl, Field
 from datetime import datetime
 class URLRequest(BaseModel):
     url : HttpUrl
-    expires_in: int | None = None 
+    expires_in: int | None = Field(default=None, gt=0)
 
 class URLResponse(BaseModel):
     original_url:HttpUrl

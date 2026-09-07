@@ -1,9 +1,8 @@
 import random
 import string
 from datetime import datetime,timedelta
-from psycopg.errors import UniqueViolation
 
-from database.queries import create_url, get_url_for_redirect_db,increment_clicks
+from database.queries import create_url, get_url_and_increment_clicks
 
 def generate_short_code(length=6):
     characters = string.digits + string.ascii_letters
@@ -19,27 +18,22 @@ def create_short_url(url, expire_in=None):
     while True:
         short_code = generate_short_code()
 
-        try:
-            create_url(
-                short_code=short_code,
-                url=str(url),
-                expires_at=expires_at
-            )
-            return short_code,expires_at
-        
-        except UniqueViolation:
-            continue
+        created = create_url(
+            short_code=short_code,
+            url=str(url),
+            expires_at=expires_at
+        )
+
+        if created:
+            return short_code, expires_at
 
 def get_url_for_redirect(code):
-    record = get_url_for_redirect_db(code)
+    record = get_url_and_increment_clicks(code)
 
-    if record is None:
-        return "Not_Found",None
+    if not record['found']:
+        return "Not_Found", None
 
-    if record["expires_at"] is not None:
-        if datetime.now() > record["expires_at"]:
-            return "Expired",None 
-
-    increment_clicks(code)
-
+    if not record['active']:
+        return 'Expired', None
+    
     return "Success", record["url"]
