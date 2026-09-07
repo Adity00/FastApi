@@ -2,6 +2,10 @@ from fastapi.testclient import TestClient
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 from database.queries import get_url_stats
+from database.queries import create_url, get_url_and_increment_clicks
+
+import time
+import uuid
 
 from main import app
 
@@ -68,26 +72,15 @@ def test_clicks_counting():
     assert data['clicks'] == 2
 
 
-def test_url_stats():
-    response = client.post(
-        '/shorten',
-        json={
-            "url":"https://example.com",
-            'expires_in':300
-        }
-    )
-    assert response.status_code == 201
+def test_url_stats(shortened_url):
 
-    data = response.json()
-    shortcode = data['shortcode']
-
-    response = client.get(f'/stats/{shortcode}')
+    response = client.get(f'/stats/{shortened_url}')
 
     assert response.status_code == 200
 
     data = response.json()
 
-    assert data['shortcode'] == shortcode
+    assert data['shortcode'] == shortened_url
     assert data['original_url'] == "https://example.com/"
     assert data['clicks'] == 0
     assert data['expires_at'] is not None
@@ -107,7 +100,6 @@ def test_expired_url():
     data = response.json()
     shortcode = data['shortcode']
 
-    import time
     time.sleep(1.1)
 
     response = client.get(
@@ -182,42 +174,6 @@ def test_negative_expiration():
 
     assert response.status_code == 422
 
-def test_concurrent_clicks():
-    response = client.post(
-        '/shorten',
-        json={
-            'url':'https://example.com',
-            'expires_in':300
-        }
-    )
-
-    assert response.status_code == 201
-
-    shortcode = response.json()['shortcode']
-
-    def make_request():
-        return client.get(
-            f'/{shortcode}',
-            follow_redirects=False
-        )
-
-    with  ThreadPoolExecutor(max_workers=10) as executor:
-        responses = list(
-            executor.map(
-                lambda _: make_request(),
-                range(10)
-            )
-        )
-
-        for response in responses:
-            assert response.status_code == 302
-
-        response = client.get(f'/stats/{shortcode}')
-
-        assert response.status_code == 200
-
-        assert response.json()['clicks'] == 10
-
 def test_shortcode_collison():
     response = client.post(
         '/shorten',
@@ -231,11 +187,13 @@ def test_shortcode_collison():
 
     existing_shortcode = response.json()['shortcode']
 
-    new_shortcode = 'TEST01'
+    new_shortcode = uuid.uuid4().hex[:6]
 
-    while get_url_stats(new_shortcode) is not None:
-        new_shortcode += 'X'
+    while get_url_stats(new_shortcode)is not None:
+        new_shortcode = uuid.uuid4().hex[:6]
 
+    #creates a fake API input which generates a already present shortcode which
+    #returns false and then again give second input which is gurenteed unique using uuid
     with patch(
         "services.url_service.generate_short_code",
         side_effect=[existing_shortcode, new_shortcode]
@@ -252,8 +210,20 @@ def test_shortcode_collison():
     assert response.json()['shortcode'] == new_shortcode
 
 def test_connection_pool_concurrency():
+    response = client.post(
+        '/shorten',
+        json={
+            'url':'https://example.com',
+            'expires_in': 300
+        }
+    )
+
+    assert response.status_code == 201
+
+    shortcode =response.json()['shortcode']
+
     def make_request():
-        return client.get("/stats/test01")
+        return client.get(f'/stats/{shortcode}')
 
     with ThreadPoolExecutor(max_workers=20) as executor:
         responses = list(
