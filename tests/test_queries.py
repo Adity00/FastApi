@@ -1,5 +1,6 @@
 from database.queries import create_url, get_url_and_increment_clicks, get_url_stats
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
 
 def test_get_url_and_increment_clicks():
     create_url(
@@ -52,3 +53,26 @@ def test_expired_url_does_not_increment_clicks():
     stats = get_url_stats('exp002')
 
     assert stats['clicks'] == 0
+
+def test_concurrent_clicks():
+    create_url(
+        'con001',
+        'https://example.com'
+    )
+
+    def make_request():
+        return get_url_and_increment_clicks('con001')
+
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        results = list(
+            executor.map(
+                lambda _: make_request(),
+                range(50)
+            )
+        )
+
+    assert all(result['status'] == 'success' for result in results)    
+
+    stats = get_url_stats('con001')
+
+    assert stats['clicks'] == 50
