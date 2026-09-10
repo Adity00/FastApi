@@ -1,6 +1,8 @@
 import random
 import string
 from datetime import datetime,timedelta
+from exceptions import URLCreationError
+from psycopg import OperationalError
 
 from database.queries import create_url, get_url_and_increment_clicks
 
@@ -18,11 +20,20 @@ def create_short_url(url, expire_in=None):
     while True:
         short_code = generate_short_code()
 
-        created = create_url(
-            short_code=short_code,
-            url=str(url),
-            expires_at=expires_at
-        )
+        for attmept in range(3):
+            try:
+                created = create_url(
+                    short_code=short_code,
+                    url=str(url),
+                    expires_at=expires_at
+                )
+                break
+
+            except OperationalError:
+                if attmept == 2:
+                    raise URLCreationError(
+                        "could not create short URL"
+                    )      
 
         if created:
             return short_code, expires_at
