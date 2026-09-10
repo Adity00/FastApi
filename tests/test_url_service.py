@@ -4,7 +4,7 @@ from unittest.mock import patch
 from datetime import datetime, timezone
 import time
 from psycopg import OperationalError
-from exceptions import URLCreationError
+from exceptions import URLCreationError, URLExpiredError
 import pytest
 
 
@@ -109,9 +109,8 @@ def test_get_url_for_redirect_expired():
 
     time.sleep(1.1)
 
-    result = get_url_for_redirect(shortcode)
-
-    assert result['status'] == 'expired'
+    with pytest.raises(URLExpiredError):
+        get_url_for_redirect(shortcode)
 
 def test_create_short_url_database_failure():
     with patch(
