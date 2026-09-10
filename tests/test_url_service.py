@@ -3,6 +3,9 @@ from database.queries import get_url_stats
 from unittest.mock import patch
 from datetime import datetime, timezone
 import time
+from psycopg import OperationalError
+from exceptions import URLCreationError
+import pytest
 
 
 def test_create_short_url():
@@ -75,7 +78,6 @@ def test_create_short_url_retries_database_failure():
         "services.url_service.create_url",
         side_effect=[False, True]
     ):
-
         shortcode, expires_at = create_short_url(
             "https://example.com",
             300
@@ -110,4 +112,36 @@ def test_get_url_for_redirect_expired():
     result = get_url_for_redirect(shortcode)
 
     assert result['status'] == 'expired'
+
+def test_create_short_url_database_failure():
+    with patch(
+        "services.url_service.create_url",
+        side_effect = OperationalError('database unavailable')
+        ) as mock_create_url:
+        with pytest.raises(URLCreationError):
+            create_short_url(
+                'https://example.com',
+                300
+            )
+    assert mock_create_url.call_count  == 3
+
+def test_create_short_url_database_retry_success():
+
+    with patch(
+        "services.url_service.create_url",
+        side_effect=[
+            OperationalError("database unavailable"),
+            OperationalError("database unavailable"),
+            True
+        ]
+    ) as mock_create_url:
+        shortcode, expires_at = create_short_url(
+            'https://example.com',
+            300
+        )
+
+    assert shortcode is not None
+    assert len(shortcode) == 6
+    assert expires_at is not None
+    assert mock_create_url.call_count == 3
     

@@ -2,7 +2,8 @@ from fastapi.testclient import TestClient
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 from database.queries import get_url_stats
-from database.queries import create_url, get_url_and_increment_clicks
+from exceptions import URLCreationError
+from unittest.mock import patch
 
 import time
 import uuid
@@ -121,6 +122,7 @@ def test_nonexistent_short_code():
     assert response.status_code == 404
     assert response.json()['detail'] == 'Short code not found'
 
+
 def test_invalid_url():
     reponse = client.post(
         '/shorten',
@@ -131,6 +133,7 @@ def test_invalid_url():
     )
     assert reponse.status_code == 422
 
+
 def test_missing_url():
     response = client.post(
         '/shorten',
@@ -140,6 +143,7 @@ def test_missing_url():
     )    
 
     assert response.status_code == 422
+
 
 def test_invalid_expires_in():
     response = client.post(
@@ -152,6 +156,7 @@ def test_invalid_expires_in():
 
     assert response.status_code == 422
 
+
 def test_invalid_expiration():
     response = client.post(
         '/shorten',
@@ -163,6 +168,7 @@ def test_invalid_expiration():
 
     assert response.status_code == 422
 
+
 def test_negative_expiration():
     response = client.post(
         '/shorten',
@@ -173,6 +179,7 @@ def test_negative_expiration():
     )
 
     assert response.status_code == 422
+
 
 def test_shortcode_collison():
     response = client.post(
@@ -209,6 +216,7 @@ def test_shortcode_collison():
     assert response.status_code == 201
     assert response.json()['shortcode'] == new_shortcode
 
+
 def test_connection_pool_concurrency():
     response = client.post(
         '/shorten',
@@ -234,6 +242,7 @@ def test_connection_pool_concurrency():
         )
 
     assert all(response.status_code == 200 for response in responses)
+
 
 def test_concurrent_clicks():
     response = client.post(
@@ -268,3 +277,19 @@ def test_concurrent_clicks():
 
         assert response.status_code == 200
         assert response.json()['clicks'] == 50
+
+
+def test_shorten_database_failure():
+    with patch(
+        "routes.urls.create_short_url",
+        side_effect=URLCreationError("could not create short URL")
+    ):
+        response = client.post(
+            "/shorten",
+            json={
+                "url": "https://example.com"
+            }
+        )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "could not create short URL"

@@ -1,5 +1,5 @@
 from database.connection import pool
-from psycopg.errors import UniqueViolation
+from psycopg.errors import UniqueViolation, OperationalError
 
 def create_url(short_code, url, expires_at=None):
     try:

@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 from models.url import URLRequest,URLResponse,URLStatsResponse
 from services.url_service import create_short_url, get_url_for_redirect
 from database.queries import get_url_stats
+from exceptions import URLCreationError
 
 
 router = APIRouter()
@@ -11,11 +12,17 @@ router = APIRouter()
 
 @router.post("/shorten",response_model=URLResponse, status_code=status.HTTP_201_CREATED)
 def shorten(request: URLRequest):
+    try:
+        short_code, expires_at = create_short_url(
+            request.url,
+            request.expires_in
+        )
 
-    short_code, expires_at = create_short_url(
-        request.url,
-        request.expires_in
-    )
+    except URLCreationError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='could not create short URL'
+        )    
 
     return {
         "original_url": request.url,
