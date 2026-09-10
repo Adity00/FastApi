@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from models.url import URLRequest,URLResponse,URLStatsResponse
 from services.url_service import create_short_url, get_url_for_redirect
 from database.queries import get_url_stats
-from exceptions import URLCreationError
+from exceptions import URLCreationError,URLExpiredError
 
 
 router = APIRouter()
@@ -52,18 +52,19 @@ def stats(code: str):
 
 @router.get("/{code}")
 def redirect_url(code: str):
+    try:
+        result = get_url_for_redirect(code)
 
-    result = get_url_for_redirect(code)
+    except URLExpiredError:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail='URL_Expired'
+        )
 
     if result['status'] == 'not_found':
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Short code not found"
-        )
-    if result['status'] == 'expired':
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="URL_Expired"
+            detail='Short code not found'
         )
 
     return RedirectResponse(
