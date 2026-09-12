@@ -4,3 +4,6 @@ class URLCreationError(Exception):
 
 class URLExpiredError(Exception):
     pass
+
+class URLNotFoundError(Exception):
+    pass

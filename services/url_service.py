@@ -1,7 +1,7 @@
 import random
 import string
 from datetime import datetime,timedelta
-from exceptions import URLCreationError,URLExpiredError
+from exceptions import URLCreationError,URLExpiredError,URLNotFoundError
 from psycopg import OperationalError
 
 from database.queries import create_url, get_url_and_increment_clicks
@@ -41,7 +41,10 @@ def create_short_url(url, expire_in=None):
 def get_url_for_redirect(code):
     result = get_url_and_increment_clicks(code)
 
-    if result['status'] == 'expired':
-        raise URLExpiredError('URL has expired')
+    if result is None:
+        raise URLNotFoundError('URL not Found')
 
+    if result['status'] == 'expired':
+        raise URLExpiredError('URL Expired')
+    
     return result

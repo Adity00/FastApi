@@ -20,7 +20,7 @@ def test_get_url_and_increment_clicks():
 def test_get_url_and_increment_clicks_not_found():
 
     result = get_url_and_increment_clicks('doesnotexist')
-    assert result['status'] == 'not_found'
+    assert result is None
 
 def test_get_url_and_increment_clicks_expired():
 
