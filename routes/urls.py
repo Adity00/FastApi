@@ -2,8 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import RedirectResponse
 
 from models.url import URLRequest,URLResponse,URLStatsResponse
-from services.url_service import create_short_url, get_url_for_redirect
-from database.queries import get_url_stats
+from services.url_service import create_short_url, get_url_for_redirect, get_stats_for_url
 from exceptions import URLCreationError,URLExpiredError,URLNotFoundError
 
 
@@ -33,22 +32,22 @@ def shorten(request: URLRequest):
 
 @router.get("/stats/{code}", response_model=URLStatsResponse)
 def stats(code: str):
-
-    record = get_url_stats(code)
-
-    if record is None:
+    try:
+        record = get_stats_for_url(code)
+        
+    except URLNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Short code not found"
         )
 
     return {
-        "shortcode": code,
-        "original_url": record["url"],
-        "clicks": record["clicks"],
-        "expires_at": record["expires_at"]
-    }
-
+        'shortcode':code,
+        'original_url':record['url'],
+        'clicks':record['clicks'],
+        'expires_at':record['expires_at']
+    }    
+    
 
 @router.get("/{code}")
 def redirect_url(code: str):
