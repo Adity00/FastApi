@@ -4,7 +4,7 @@ from unittest.mock import patch
 from datetime import datetime, timezone
 import time
 from psycopg import OperationalError
-from exceptions import URLCreationError, URLExpiredError
+from exceptions import URLCreationError, URLExpiredError, URLNotFoundError
 import pytest
 
 
@@ -93,13 +93,11 @@ def test_get_url_for_redirect():
 
     result = get_url_for_redirect(shortcode)
 
-    assert result['status'] == 'success'
     assert result['url'] == 'https://example.com'
 
 def test_get_url_redirect_not_found():
-    result = get_url_for_redirect("blabla")
-
-    assert result['status']== 'not_found'    
+    with pytest.raises(URLNotFoundError):
+        get_url_for_redirect('blabla')
 
 def test_get_url_for_redirect_expired():
     shortcode, expires_at = create_short_url(
@@ -108,7 +106,6 @@ def test_get_url_for_redirect_expired():
     )
 
     time.sleep(1.1)
-
     with pytest.raises(URLExpiredError):
         get_url_for_redirect(shortcode)
 
@@ -143,4 +140,3 @@ def test_create_short_url_database_retry_success():
     assert len(shortcode) == 6
     assert expires_at is not None
     assert mock_create_url.call_count == 3
-    

@@ -63,10 +63,10 @@ def get_url_and_increment_clicks(shortcode):
             if row is not None:
                 return {
                     'status':'success',
-                    "url":row[0],
+                    'url':row[0],
                     'expires_at':row[1]
                 }
-
+            
             cursor.execute(
                 """
                 SELECT expires_at
@@ -79,11 +79,9 @@ def get_url_and_increment_clicks(shortcode):
             row = cursor.fetchone()
 
             if row is None:
-                return{
-                    'status':'not_found'
-                }
+                return None
 
-            return{
+            return {
                 'status':'expired'
             }
         
