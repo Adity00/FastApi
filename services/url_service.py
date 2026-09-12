@@ -1,6 +1,6 @@
 import random
 import string
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta, timezone
 from exceptions import URLCreationError,URLExpiredError,URLNotFoundError
 from psycopg import OperationalError
 
@@ -15,7 +15,7 @@ def create_short_url(url, expire_in=None):
     expires_at=None
 
     if expire_in is not None:
-        expires_at = datetime.now() + timedelta(seconds=expire_in)
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=expire_in)
 
     while True:
         short_code = generate_short_code()
