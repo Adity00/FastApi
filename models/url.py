@@ -14,3 +14,4 @@ class URLStatsResponse(BaseModel):
     original_url:HttpUrl
     clicks:int
     expires_at:datetime | None = None    
+    
