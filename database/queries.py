@@ -1,16 +1,16 @@
 from database.connection import pool
 from psycopg.errors import UniqueViolation, OperationalError
 
-def create_url(short_code, url, expires_at=None):
+def create_url(short_code, url, user_id, expires_at=None):
     try:
         with pool.connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    INSERT INTO urls (shortcode, url, expires_at)
-                    VALUES (%s, %s, %s)
+                    INSERT INTO urls (shortcode, url, expires_at, user_id)
+                    VALUES (%s, %s, %s, %s)
                     """,
-                    (short_code, url, expires_at)
+                    (short_code, url, expires_at, user_id)
                 )
 
         return True
@@ -19,7 +19,7 @@ def create_url(short_code, url, expires_at=None):
         print("Collison:",short_code)
         return False
 
-def get_url_stats(shortcode):
+def get_url_stats(shortcode, user_id):
     with pool.connection() as connection:
         with connection.cursor() as cursor:
             cursor.execute(
@@ -27,8 +27,9 @@ def get_url_stats(shortcode):
                 SELECT  url, clicks, expires_at
                 FROM urls
                 WHERE shortcode = %s
+                AND user_id = %s
                 """,
-                (shortcode,)
+                (shortcode, user_id)
             )
             row = cursor.fetchone()
     if row is None:
