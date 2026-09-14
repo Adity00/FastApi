@@ -10,7 +10,7 @@ def generate_short_code(length=6):
     characters = string.digits + string.ascii_letters
     return ''.join(random.choice(characters) for _ in range(length))    
 
-def create_short_url(url, expire_in=None):
+def create_short_url(url, user_id, expire_in=None):
 
     expires_at=None
 
@@ -25,6 +25,7 @@ def create_short_url(url, expire_in=None):
                 created = create_url(
                     short_code=short_code,
                     url=str(url),
+                    user_id=user_id,
                     expires_at=expires_at
                 )
                 break
@@ -49,8 +50,8 @@ def get_url_for_redirect(code):
     
     return result
 
-def get_stats_for_url(code):
-    result = get_url_stats(code)
+def get_stats_for_url(code, user_id):
+    result = get_url_stats(code, user_id) 
 
     if result is None:
         raise URLNotFoundError('Url not found')
