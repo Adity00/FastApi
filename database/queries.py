@@ -85,4 +85,21 @@ def get_url_and_increment_clicks(shortcode):
             return {
                 'status':'expired'
             }
-        
+
+def create_user(email, password_hash):
+    try:    
+        with pool.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO users(email, password_hash)
+                    VALUES(%s,%s)
+                    """,
+                    (email, password_hash)
+                )
+
+        return True
+            
+    except UniqueViolation:
+        return False
+                

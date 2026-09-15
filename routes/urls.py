@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import RedirectResponse
 
-from models.url import URLRequest,URLResponse,URLStatsResponse
+from models.url import URLRequest,URLResponse,URLStatsResponse,RegisterRequest
 from services.url_service import create_short_url, get_url_for_redirect, get_stats_for_url
 from exceptions import URLCreationError,URLExpiredError,URLNotFoundError
+from services.auth_service import register_user
 
 
 router = APIRouter()
@@ -70,3 +71,22 @@ def redirect_url(code: str):
         url=result['url'],
         status_code=302
     )
+
+
+@router.post('/register')
+def register(request: RegisterRequest):
+    result = register_user(
+        request.email,
+        request.password
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email Already registerd"
+        )
+
+    else:
+        return{
+            'message':'User registered'
+        }
