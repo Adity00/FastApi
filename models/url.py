@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, HttpUrl, Field, EmailStr
 from datetime import datetime
 class URLRequest(BaseModel):
     url : HttpUrl
@@ -14,4 +14,7 @@ class URLStatsResponse(BaseModel):
     original_url:HttpUrl
     clicks:int
     expires_at:datetime | None = None    
-    
+
+class RegisterRequest(BaseModel):
+    email:EmailStr
+    password:str
